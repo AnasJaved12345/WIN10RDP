@@ -10,28 +10,26 @@ jobs:
     steps:
     - name: Downloading Ngrok.
       run: |
-        Invoke-WebRequest https://raw.githubusercontent.com/msraj1584/msrajserv/main/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
+        Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
         Invoke-WebRequest https://raw.githubusercontent.com/msraj1584/msrajserv/main/start.bat -OutFile start.bat
 
     - name: Extracting Ngrok Files.
       run: Expand-Archive ngrok.zip
 
+    - name: Verify Ngrok Version
+      run: .\ngrok\ngrok.exe version
+
     - name: Connecting to your Ngrok account.
-      run: .\ngrok\ngrok.exe authtoken 2825WqcznOwL6RC7bGsjecu1ztF_6D87h96jFdRhpUJ69m8TN
+      run: .\ngrok\ngrok.exe config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
 
     - name: Activating RDP access.
       run: | 
-        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
 
     - name: Creating Tunnel.
       run: .\ngrok\ngrok.exe tcp 3389
-
-    - name: Debug Ngrok Output
-      run: |
-        .\ngrok\ngrok.exe tcp 3389 > ngrok_output.txt
-        Get-Content ngrok_output.txt
 
     - name: Connecting to your RDP.
       run: cmd /c start.bat
