@@ -17,16 +17,20 @@ jobs:
       run: Expand-Archive ngrok.zip
 
     - name: Verify Ngrok Version
-      run: .\ngrok\ngrok.exe version
-
-    - name: Connecting to your Ngrok account
-      run: .\ngrok\ngrok.exe authtoken 2825WqcznOwL6RC7bGsjecu1ztF_6D87h96jFdRhpUJ69m8TN
-
-    - name: Enable Administrator Account and Set Password
-      run: |
-        net user administrator /active:yes
-        net user administrator 9S8a7r6a5n
+      run: ngrok\ngrok.exe version
       shell: cmd
+
+    - name: Connecting to Ngrok Account
+      run: ngrok\ngrok.exe config add-authtoken 2825WqcznOwL6RC7bGsjecu1ztF_6D87h96jFdRhpUJ69m8TN
+      shell: cmd
+
+    - name: Enable Administrator Account Dynamically
+      run: |
+        $adminAccount = (Get-LocalUser | Where-Object { $_.PrincipalSource -eq 'Local' -and $_.Name -match "admin" }).Name
+        Write-Host "Detected Admin Account: $adminAccount"
+        net user $adminAccount /active:yes
+        net user $adminAccount 9S8a7r6a5n
+      shell: pwsh
 
     - name: Allow Administrator to Access RDP
       run: net localgroup "Remote Desktop Users" administrator /add
@@ -37,10 +41,11 @@ jobs:
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
+      shell: pwsh
 
     - name: Creating Ngrok Tunnel
-      shell: cmd
       run: ngrok\ngrok.exe tcp 3389 --log=stdout > ngrok_log.txt
+      shell: cmd
 
     - name: Display Ngrok Tunnel URL
       run: |
@@ -54,10 +59,5 @@ jobs:
         Write-Host "========================================"
       shell: pwsh
 
-    - name: Connecting to your RDP
+    - name: Keep RDP Running
       run: cmd /c start.bat
-
-    - name: RDP is Ready
-      run: |
-        Invoke-WebRequest https://raw.githubusercontent.com/msraj1584/msrajserv/main/loop.ps1 -OutFile loop.ps1
-        ./loop.ps1
