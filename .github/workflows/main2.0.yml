@@ -1,4 +1,4 @@
-name: Win10RDP11
+name: Win10RDP!!
 
 on: workflow_dispatch
 
@@ -32,9 +32,12 @@ jobs:
         net user $adminAccount 9S8a7r6a5n
       shell: pwsh
 
-    - name: Allow Administrator to Access RDP
-      run: net localgroup "Remote Desktop Users" administrator /add
-      shell: cmd
+    - name: Add Administrator Account to Remote Desktop Users Group
+      run: |
+        $adminAccount = (Get-LocalUser | Where-Object { $_.PrincipalSource -eq 'Local' -and $_.Name -match "admin" }).Name
+        Write-Host "Adding $adminAccount to the Remote Desktop Users group."
+        net localgroup "Remote Desktop Users" $adminAccount /add
+      shell: pwsh
 
     - name: Activating RDP Access
       run: |
@@ -60,4 +63,4 @@ jobs:
       shell: pwsh
 
     - name: Keep RDP Running
-      run: cmd /c start.bat
+      run: cmd /c 
