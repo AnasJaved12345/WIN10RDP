@@ -1,4 +1,4 @@
-name: Win10RDP11
+name: Win10RDP
 
 on: workflow_dispatch
 
@@ -19,8 +19,9 @@ jobs:
     - name: Verify Ngrok Version
       run: .\ngrok\ngrok.exe version
 
-    - name: Connecting to your Ngrok account.
-      run: .\ngrok\ngrok.exe config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+    - name: Connecting to your Ngrok account
+      run: .\ngrok\ngrok.exe authtoken 2825WqcznOwL6RC7bGsjecu1ztF_6D87h96jFdRhpUJ69m8TN
+
 
     - name: Activating RDP access.
       run: | 
@@ -29,7 +30,8 @@ jobs:
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
 
     - name: Creating Tunnel.
-      run: .\ngrok\ngrok.exe tcp 3389
+      shell: cmd
+      run: ngrok\ngrok.exe tcp 3389 --log=stdout
 
     - name: Connecting to your RDP.
       run: cmd /c start.bat
