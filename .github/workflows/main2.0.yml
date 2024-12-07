@@ -1,4 +1,4 @@
-name: Win10RDP!!
+name: Win10RDP
 
 on: workflow_dispatch
 
@@ -24,25 +24,25 @@ jobs:
       run: ngrok\ngrok.exe config add-authtoken 2825WqcznOwL6RC7bGsjecu1ztF_6D87h96jFdRhpUJ69m8TN
       shell: cmd
 
-    - name: Ensure Administrator Account is Active and Password Set
+    - name: Check if Administrator Account Exists
       run: |
-        net user administrator /active:yes
-        net user administrator 9S8a7r6a5n
-      shell: cmd
+        Get-LocalUser | Select-Object Name
+      shell: pwsh
 
-    - name: Add Administrator Account to Remote Desktop Users Group
+    - name: Enable Administrator Account (PowerShell)
+      run: |
+        $adminAccount = Get-LocalUser | Where-Object { $_.Name -eq "Administrator" }
+        if ($adminAccount -eq $null) {
+          Write-Host "Administrator account does not exist."
+        } else {
+          Enable-LocalUser -Name "Administrator"
+        }
+      shell: pwsh
+
+    - name: Add Administrator to Remote Desktop Users Group
       run: |
         net localgroup "Remote Desktop Users" administrator /add
       shell: cmd
-
-    - name: Check if Remote Desktop is Enabled
-      run: |
-        $rdpStatus = Get-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections"
-        if ($rdpStatus.fDenyTSConnections -eq 1) {
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
-          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-        }
-      shell: pwsh
 
     - name: Activating RDP Access
       run: |
