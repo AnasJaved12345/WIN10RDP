@@ -8,35 +8,53 @@ jobs:
     timeout-minutes: 9999
 
     steps:
-    - name: Downloading Ngrok.
+    # 1. Download the latest Ngrok and start.bat
+    - name: Downloading Ngrok and Start Script
       run: |
         Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
         Invoke-WebRequest https://raw.githubusercontent.com/msraj1584/msrajserv/main/start.bat -OutFile start.bat
 
-    - name: Extracting Ngrok Files.
+    # 2. Extract Ngrok
+    - name: Extracting Ngrok Files
       run: Expand-Archive ngrok.zip
 
+    # 3. Verify Ngrok Version
     - name: Verify Ngrok Version
       run: .\ngrok\ngrok.exe version
 
+    # 4. Authenticate with Ngrok
     - name: Connecting to your Ngrok account
       run: .\ngrok\ngrok.exe authtoken 2825WqcznOwL6RC7bGsjecu1ztF_6D87h96jFdRhpUJ69m8TN
 
-
-    - name: Activating RDP access.
-      run: | 
+    # 5. Enable Remote Desktop (RDP) Access
+    - name: Activating RDP Access
+      run: |
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
 
-    - name: Creating Tunnel.
+    # 6. Create an Ngrok Tunnel for RDP
+    - name: Creating Ngrok Tunnel
       shell: cmd
-      run: ngrok\ngrok.exe tcp 3389 --log=stdout
+      run: ngrok\ngrok.exe tcp 3389 --log=stdout > ngrok_log.txt
 
-    - name: Connecting to your RDP.
+    # 7. Extract and Display Ngrok Tunnel URL
+    - name: Display Ngrok Tunnel URL
+      run: |
+        $log = Get-Content ngrok_log.txt
+        $url = ($log | Select-String -Pattern "url=tcp://").Matches.Value
+        Write-Host "========================================"
+        Write-Host "Ngrok Tunnel URL: $url"
+        Write-Host "Use this URL to connect via RDP."
+        Write-Host "========================================"
+      shell: pwsh
+
+    # 8. Start RDP Connection
+    - name: Connecting to your RDP
       run: cmd /c start.bat
 
-    - name: RDP is ready!
-      run: | 
+    # 9. Final Confirmation
+    - name: RDP is Ready
+      run: |
         Invoke-WebRequest https://raw.githubusercontent.com/msraj1584/msrajserv/main/loop.ps1 -OutFile loop.ps1
         ./loop.ps1
