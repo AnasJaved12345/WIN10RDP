@@ -1,4 +1,4 @@
-name: Win10RDP!!
+name: Win10RDP!
 
 on: workflow_dispatch
 
@@ -24,9 +24,8 @@ jobs:
       run: ngrok\ngrok.exe config add-authtoken 2825WqcznOwL6RC7bGsjecu1ztF_6D87h96jFdRhpUJ69m8TN
       shell: cmd
 
-    - name: Check if Administrator Account Exists
-      run: |
-        Get-LocalUser | Select-Object Name
+    - name: List Local User Accounts
+      run: Get-LocalUser | Select-Object Name
       shell: pwsh
 
     - name: Enable Administrator Account (PowerShell)
@@ -39,10 +38,17 @@ jobs:
         }
       shell: pwsh
 
-    - name: Add Administrator to Remote Desktop Users Group
+    - name: Add User to Remote Desktop Users Group
       run: |
-        net localgroup "Remote Desktop Users" administrator /add
-      shell: cmd
+        # Try adding 'Administrator' if found, otherwise fallback to a user like 'runneradmin'
+        $user = Get-LocalUser | Where-Object { $_.Name -match "admin" }
+        if ($user) {
+          net localgroup "Remote Desktop Users" $user.Name /add
+          Write-Host "$($user.Name) added to the Remote Desktop Users group."
+        } else {
+          Write-Host "No matching admin user found"
+        }
+      shell: pwsh
 
     - name: Activating RDP Access
       run: |
