@@ -24,19 +24,24 @@ jobs:
       run: ngrok\ngrok.exe config add-authtoken 2825WqcznOwL6RC7bGsjecu1ztF_6D87h96jFdRhpUJ69m8TN
       shell: cmd
 
-    - name: Enable Administrator Account Dynamically
+    - name: Ensure Administrator Account is Active and Password Set
       run: |
-        $adminAccount = (Get-LocalUser | Where-Object { $_.PrincipalSource -eq 'Local' -and $_.Name -match "admin" }).Name
-        Write-Host "Detected Admin Account: $adminAccount"
-        net user $adminAccount /active:yes
-        net user $adminAccount 9S8a7r6a5n
-      shell: pwsh
+        net user administrator /active:yes
+        net user administrator 9S8a7r6a5n
+      shell: cmd
 
     - name: Add Administrator Account to Remote Desktop Users Group
       run: |
-        $adminAccount = (Get-LocalUser | Where-Object { $_.PrincipalSource -eq 'Local' -and $_.Name -match "admin" }).Name
-        Write-Host "Adding $adminAccount to the Remote Desktop Users group."
-        net localgroup "Remote Desktop Users" $adminAccount /add
+        net localgroup "Remote Desktop Users" administrator /add
+      shell: cmd
+
+    - name: Check if Remote Desktop is Enabled
+      run: |
+        $rdpStatus = Get-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections"
+        if ($rdpStatus.fDenyTSConnections -eq 1) {
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        }
       shell: pwsh
 
     - name: Activating RDP Access
@@ -46,8 +51,8 @@ jobs:
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
       shell: pwsh
 
-    - name: Creating Ngrok Tunnel
-      run: ngrok\ngrok.exe tcp 3389 --log=stdout > ngrok_log.txt
+    - name: Creating Ngrok Tunnel with Debug Logging
+      run: ngrok\ngrok.exe tcp 3389 --log=stdout --log-level=debug
       shell: cmd
 
     - name: Display Ngrok Tunnel URL
@@ -63,4 +68,4 @@ jobs:
       shell: pwsh
 
     - name: Keep RDP Running
-      run: cmd /c 
+      run: cmd /c start.bat
