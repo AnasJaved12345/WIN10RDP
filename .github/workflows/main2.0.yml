@@ -1,4 +1,4 @@
-name: Win10RDP
+name: Win10RDP11
 
 on: workflow_dispatch
 
